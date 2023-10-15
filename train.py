@@ -37,7 +37,7 @@ warnings.filterwarnings('ignore')
 
 
 def train(cfg, args):
-    logger = logging.getLogger("AL-RIPU.trainer")
+    logger = logging.getLogger("EasySeg.trainer")
 
     # create network
     device = torch.device(cfg.MODEL.DEVICE)
@@ -581,7 +581,7 @@ def main():
                         type=str)
     parser.add_argument("--proctitle",
                         type=str,
-                        default="AL-RIPU",
+                        default="EasySeg",
                         help="allow a process to change its title", )
     parser.add_argument(
         "opts",

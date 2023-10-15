@@ -2,28 +2,28 @@
 
 <div align="center">    
 
-# EASE-ADA: an Error-Aware Semi-Supervised Active Domain Adaptation Method for Remote Sensing Image Semantic Segmentation
+# EasySeg: an Error-Aware domain adaptation framework for remote Sensing imagerY semantic SEGmentation via interactive learning and active learning
 
 
 </div>
 
 
 ## Overview
-We explore a novel active domain adaptation (ADA) method for semantic segmentation in remote sensing imagery. We introduce our EASE-ADA framework, emphasizing the efficient utilization of target domain data. We propose the SFAL labeling strategy to make point-level active domain adaptation error aware while ensuring ease and efficiency in the labeling process. To harness the full potential of labeled target data, we design ISS-Net to generate more accurate and denser pseudo-labels. To fully leverage unlabeled target data, we apply weak-to-strong consistency to mitigate training noise and enhance model robustness. 
+We explore a novel active domain adaptation (ADA) method for semantic segmentation in remote sensing imagery. We introduce our EasySeg framework, emphasizing the efficient utilization of target domain data. We propose the SFAL labeling strategy to make point-level active domain adaptation error aware while ensuring ease and efficiency in the labeling process. To harness the full potential of labeled target data, we design ISS-Net to generate accurate and dense pseudo-labels. To fully leverage unlabeled target data, we apply consistency regularization to mitigate training noise and enhance model robustness.
 
-We show the overview of the proposed EASE-ADA, 
+We show the overview of the proposed EasySeg, 
 
 ![image](resources/Overview.png)
 
 the encoder of the ISS-Net, 
 
-![image](resources/ISS-Net.png)
+<img src="resources/ISS-Net.png" alt="image" style="zoom: 25%;" />
 
-and our Semi-supervised learning strategy.
+and our consistency regularization.
 
-![image](resources/WTS-ADA.png)
+<img src="resources/ConsistencyRegularization.png" alt="image" style="zoom:36%;" />
 
-For more information on RIPU, please check our paper.
+For more information on EasySeg, please check our paper.
 
 ## Usage
 ### Prerequisites
@@ -34,8 +34,8 @@ For more information on RIPU, please check our paper.
 Step-by-step installation
 
 ```bash
-conda create --name EASEADA -y python=3.8
-conda activate EASEADA
+conda create --name EasySeg -y python=3.8
+conda activate EasySeg
 
 # this installs the right pip and dependencies for the fresh python
 conda install -y ipython pip
@@ -77,7 +77,6 @@ The data folder should be structured as follows:
 |   |   |   ├── images/
 |   |   |   ├── labels/
 |   |   ├── drone_label_info.p
-│   └──	
 ```
 
 
@@ -94,8 +93,8 @@ python -m torch.distributed.launch \
 	--master_addr=localhost \
 	--master_port=<port> \
 	train.py \
-	-cfg configs/EASEADA/P2V/deeplabv3plus_r101.yaml \
-	OUTPUT_DIR results/EASEADA_P2V_V3BASED
+	-cfg configs/EasySeg/P2V/deeplabv3plus_r101.yaml \
+	OUTPUT_DIR results/EasySeg_P2V_V3BASED
 
 # training for Potsdam to Vaihingen (Deeplabv2-ResNet101)
 python -m torch.distributed.launch \
@@ -103,8 +102,8 @@ python -m torch.distributed.launch \
 	--master_addr=localhost \
 	--master_port=<port> \
 	train.py \
-	-cfg configs/EASEADA/P2V/deeplabv2_r101.yaml \
-	OUTPUT_DIR results/EASEADA_P2V_V2BASED
+	-cfg configs/EasySeg/P2V/deeplabv2_r101.yaml \
+	OUTPUT_DIR results/EasySeg_P2V_V2BASED
 	
 # training for Potsdam to Semantic Drone (Deeplabv3plus-ResNet101)
 python -m torch.distributed.launch \
@@ -112,8 +111,8 @@ python -m torch.distributed.launch \
 	--master_addr=localhost \
 	--master_port=<port> \
 	train.py \
-	-cfg configs/EASEADA/P2D/deeplabv3plus_r101.yaml \
-	OUTPUT_DIR results/EASEADA_P2D_V3BASED
+	-cfg configs/EasySeg/P2D/deeplabv3plus_r101.yaml \
+	OUTPUT_DIR results/EasySeg_P2D_V3BASED
 
 # training for Potsdam to Vaihingen (Deeplabv2-ResNet101)
 python -m torch.distributed.launch \
@@ -121,14 +120,14 @@ python -m torch.distributed.launch \
 	--master_addr=localhost \
 	--master_port=<port> \
 	train.py \
-	-cfg configs/EASEADA/P2D/deeplabv2_r101.yaml \
-	OUTPUT_DIR results/EASEADA_P2D_V2BASED
+	-cfg configs/EasySeg/P2D/deeplabv2_r101.yaml \
+	OUTPUT_DIR results/EasySeg_P2D_V2BASED
 ```
 
 ### Testing
 To evaluate EASE-ADA e.g. Potsdam to Vaihingen (Deeplabv3plus-ResNet101), use the following command:
 ```bash
-python test.py -cfg configs/EASEADA/deeplabv3plus_r101.yaml resume checkpint/EASEADA_P2V_V3BASED/model_last.pth OUTPUT_DIR checkpint/EASEADA_P2V_V3BASED
+python test.py -cfg configs/EasySeg/deeplabv3plus_r101.yaml resume checkpint/EasySeg_P2V_V3BASED/model_last.pth OUTPUT_DIR checkpint/EasySeg_P2V_V3BASED
 ```
 
 

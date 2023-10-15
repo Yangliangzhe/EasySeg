@@ -83,7 +83,7 @@ def mkdir_path(dir):
 
 
 def test(cfg):
-    logger = logging.getLogger("AL-RIPU.tester")
+    logger = logging.getLogger("EasySeg.tester")
     logger.info("Start testing")
     device = torch.device(cfg.MODEL.DEVICE)
 
@@ -144,24 +144,15 @@ def test(cfg):
         pred_onehot = pred_onehot.cpu().numpy()
         pred = pred.cpu().numpy().squeeze().argmax(0)
         pred_class.update(np.sum(np.sum(pred_onehot,1),1)[0,:])
-        #precision_class = intersection_meter.val / (np.sum(np.sum(pred_onehot,1),1)[0,:] + 1e-10)
-        #recall_class = intersection_meter.val / (sum(target_meter.val) + 1e-10)
-        
-        #precision_meter.update(precision_class)
-        #recall_meter.update(recall_class)
-        #F1_list.append(2*precision_class*recall_class/(precision_class+recall_class + 1e-10))
 
         if cfg.MODEL.NUM_CLASSES == 16:
             pred = transform_color(pred)
         mask = get_color_pallete(pred, cfg.DATASETS.TEST.split('_')[0])
-
-        #mask_filename = name if len(name.split("/")) < 2 else name.split("/")[1]
         mask_filename = name + '.png'
 
         if mask.mode == 'P':
             mask = mask.convert('RGB')
-        
-        #mkdir_path(os.path.join(output_folder, mask_filename.split('.')[0].split('\\')[0]))
+
         mask.save(os.path.join(output_folder, mask_filename))
 
     iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
@@ -173,7 +164,6 @@ def test(cfg):
     mIoU = np.mean(iou_class)
     mAcc = np.mean(accuracy_class) # 不同类别的Acc的平均
     allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10) # OA: .sum是每类的累计，所有类别的平均Acc
-    #print(np.mean(F1_list,0)) # 不能mean，因为有些图片没有某个类别是0，而mean会增大分母
 
 
     logger.info('Val result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU, mAcc, allAcc))
@@ -193,7 +183,7 @@ def main():
                         )
     parser.add_argument("--proctitle",
                         type=str,
-                        default="AL-RIPU",
+                        default="EasySeg",
                         help="allow a process to change its title", )
     parser.add_argument(
         "opts",
@@ -212,7 +202,7 @@ def main():
 
     setproctitle.setproctitle(f'{args.proctitle}')
     save_dir = cfg.OUTPUT_DIR+'/inference/'
-    logger = setup_logger("AL-RIPU", save_dir, 0)
+    logger = setup_logger("EasySeg", save_dir, 0)
     logger.info(cfg)
 
     logger.info("Loaded configuration file {}".format(args.config_file))
