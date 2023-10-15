@@ -114,7 +114,7 @@ python -m torch.distributed.launch \
 	-cfg configs/EasySeg/P2D/deeplabv3plus_r101.yaml \
 	OUTPUT_DIR results/EasySeg_P2D_V3BASED
 
-# training for Potsdam to Vaihingen (Deeplabv2-ResNet101)
+# training for Potsdam to Semantic Drone (Deeplabv2-ResNet101)
 python -m torch.distributed.launch \
 	--nproc_per_node=<num_gpu> \
 	--master_addr=localhost \
