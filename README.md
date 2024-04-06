@@ -15,7 +15,7 @@ We show the overview of the proposed EasySeg,
 
 ![image](resources/Overview.png)
 
-the encoder of the ISS-Net, 
+illustration of our ISS-Net with resnet101 as backbone, 
 
 <img src="resources/ISS-Net.png" alt="image" style="zoom: 25%;" />
 
@@ -125,7 +125,7 @@ python -m torch.distributed.launch \
 ```
 
 ### Testing
-To evaluate EASE-ADA e.g. Potsdam to Vaihingen (Deeplabv3plus-ResNet101), use the following command:
+To evaluate EasySeg e.g. Potsdam to Vaihingen (Deeplabv3plus-ResNet101), use the following command:
 ```bash
 python test.py -cfg configs/EasySeg/deeplabv3plus_r101.yaml resume checkpint/EasySeg_P2V_V3BASED/model_last.pth OUTPUT_DIR checkpint/EasySeg_P2V_V3BASED
 ```
@@ -139,6 +139,6 @@ This project is based on the following open-source projects: [RIPU](https://gith
 
 If you have any problem about our code, feel free to contact
 
-- [yangliangzhe@nudt.edu.cn](yangliangzhe@nudt.edu.cn)
+- [yangliangzhe2000@163.com](yangliangzhe2000@163.com)
 
 or describe your problem in Issues.

@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-from mmcv.runner import load_checkpoint
+from mmengine.runner import load_checkpoint
 
 BatchNorm = nn.BatchNorm2d
 

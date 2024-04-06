@@ -97,7 +97,7 @@ class DatasetCatalog(object):
             mkdir_path(mask_dir+'/'+name.split('/')[0])
             mkdir_path(indicator_dir+'/'+name.split('/')[0])
 
-            img = Image.open(path2image).convert('RGB')
+            img = Image.open(path2image.replace('\\', '/')).convert('RGB')
             h, w = img.size[1], img.size[0]
             mask = np.ones((h, w), dtype=np.uint8) * 255
             mask = Image.fromarray(mask)

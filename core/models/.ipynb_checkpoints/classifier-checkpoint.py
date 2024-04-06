@@ -131,12 +131,28 @@ class DepthwiseSeparableASPP(nn.Module):
 
         self._init_weight()
 
-    def forward(self, x, size=None):
+    def forward(self, x, size=None, need_fp=False):
 
         # fed to backbone
         low_level_feat = x['low']
         x = x['out']
+        
+        if need_fp:
+            outs = self.decode_(torch.cat((low_level_feat, nn.Dropout2d(0.5)(low_level_feat))),
+                                torch.cat((x, nn.Dropout2d(0.5)(x))))
+            if size is not None:
+                outs = F.interpolate(outs, size=size, mode="bilinear", align_corners=True)
+            out, out_fp = outs.chunk(2)
 
+            return out, out_fp
+        
+        out = self.decode_(low_level_feat, x)
+
+        if size is not None:
+            out = F.interpolate(out, size=size, mode='bilinear', align_corners=True)
+        return out
+    
+    def decode_(self, low_level_feat, x):
         # feed to aspp
         aspp_out = []
         for branch in self.parallel_branches:
@@ -154,11 +170,9 @@ class DepthwiseSeparableASPP(nn.Module):
         # feed to decoder
         feats = torch.cat([aspp_out, shortcut_out], dim=1)
         out = self.decoder(feats)
-
-        if size is not None:
-            out = F.interpolate(out, size=size, mode='bilinear', align_corners=True)
+        
         return out
-
+    
     def _init_weight(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):

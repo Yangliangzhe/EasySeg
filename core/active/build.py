@@ -120,10 +120,10 @@ def SFALPixelSelection(cfg, feature_extractor, classifier, tgt_epoch_loader, cud
                 fn_mask = np.logical_and(origin_label_onehot[i].cpu().numpy(), np.logical_not(one_hot[i].cpu().numpy()))
                 lscore = scorecal.get_labelscores(ground_truth.cpu().numpy(), pseudo_label.cpu().numpy())
 
-                bad_pred_class = lscore >= cfg.INTERACTIVE.FN_THRESHOLD
+                bad_pred_class = lscore >= cfg.INTERACTIVE.ERROR_THRESHOLD
                 bad_pred_class_list += bad_pred_class
                 bad_pred_class_num = (bad_pred_class).sum()
-                bad_pred_class_index = np.where(lscore >= cfg.INTERACTIVE.FN_THRESHOLD)[0]
+                bad_pred_class_index = np.where(lscore >= cfg.INTERACTIVE.ERROR_THRESHOLD)[0]
 
                 for j in range(bad_pred_class_num):
                     if active_pixels < 1:

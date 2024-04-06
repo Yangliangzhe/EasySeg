@@ -194,6 +194,11 @@ def train(cfg, args):
                 feature_extractor.eval()
                 classifier.eval()
                 points = F.one_hot(torch.clamp(tgt_mask2, 0, 6), 7).permute(0, 3, 1, 2)[:, 0:6].cuda()
+                points_k = np.random.random(points.shape)
+                points_mask = torch.tensor(points_k <= cfg.INTERACTIVE.point_k).cuda()
+                points_sampled = points * points_mask
+                #print(points.sum(), points_sampled.sum())
+                
                 kernel = torch.FloatTensor([[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], \
                                             [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0], \
                                             [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0], \
@@ -206,7 +211,7 @@ def train(cfg, args):
                                             [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0], \
                                             [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]).expand(points.shape[1], 1, 11, 11)
                 weight = nn.Parameter(data=kernel, requires_grad=False).cuda()
-                encoding_points = nn.functional.conv2d(points.float(), weight, bias=None, stride=1, padding=5, groups=6)
+                encoding_points = nn.functional.conv2d(points_sampled.float(), weight, bias=None, stride=1, padding=5, groups=6) # to do
                 prev_out = torch.zeros(encoding_points.shape).cuda()
                 interactive_maps = torch.cat([encoding_points, prev_out], 1)
 
@@ -247,6 +252,10 @@ def train(cfg, args):
 
             # Pseudo-labels Generation
             points = F.one_hot(torch.clamp(tgt_mask1, 0, 6), 7).permute(0, 3, 1, 2)[:, 0:6].cuda()
+            points_k = np.random.random(points.shape)
+            points_mask = torch.tensor(points_k <= cfg.INTERACTIVE.point_k).cuda()
+            points_sampled = points * points_mask
+            
             kernel = torch.FloatTensor([[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], \
                                         [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0], \
                                         [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0], \
@@ -259,7 +268,7 @@ def train(cfg, args):
                                         [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0], \
                                         [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]).expand(points.shape[1], 1, 11, 11)
             weight = nn.Parameter(data=kernel, requires_grad=False).cuda()
-            encoding_points = nn.functional.conv2d(points.float(), weight, bias=None, stride=1, padding=5, groups=6)
+            encoding_points = nn.functional.conv2d(points_sampled.float(), weight, bias=None, stride=1, padding=5, groups=6)
             interactive_maps = torch.cat([encoding_points, pred_tgt_w.softmax(dim=1).clone().detach()], 1)
 
             pred_tgt_iseg = classifier(feature_extractor(img_tgt_w, interactive_maps), size=size)
@@ -343,7 +352,7 @@ def train(cfg, args):
                 points, interactive_maps, _ = place_next_points(prev_out, label_src, points, haveplace, iteration, \
                                                                 calculate_purity, iteration_thre, radius=5,
                                                                 num=num, \
-                                                                FN_THRESHOLD=cfg.INTERACTIVE.FN_THRESHOLD, \
+                                                                FN_THRESHOLD=cfg.INTERACTIVE.ERROR_THRESHOLD, \
                                                                 RADIUS_K=cfg.ACTIVE.RADIUS_K)
 
                 pred_src = classifier(feature_extractor(img_src, interactive_maps), size=size)
@@ -355,7 +364,7 @@ def train(cfg, args):
         points, interactive_maps, click_maps = place_next_points(prev_out, label_src, points, num_iters - 1, iteration,
                                                                  calculate_purity,
                                                                  iteration_thre, radius=5, num=1,
-                                                                 FN_THRESHOLD=cfg.INTERACTIVE.FN_THRESHOLD, \
+                                                                 FN_THRESHOLD=cfg.INTERACTIVE.ERROR_THRESHOLD, \
                                                                  RADIUS_K=cfg.ACTIVE.RADIUS_K)
         iseg_feat = feature_extractor(img_src, interactive_maps)
         src_out = classifier(iseg_feat, size=size)
@@ -423,6 +432,7 @@ def train(cfg, args):
             )
 
         if iteration == cfg.SOLVER.MAX_ITER or iteration % cfg.SOLVER.CHECKPOINT_PERIOD == 0:
+            
             filename = os.path.join(cfg.OUTPUT_DIR, "model_iter{:06d}.pth".format(iteration))
             torch.save({
                     'feature_extractor': feature_extractor.state_dict(),
@@ -433,6 +443,28 @@ def train(cfg, args):
                     'iteration': iteration,
                     'previous_best': previous_best,
                 }, filename)
+            
+        if iteration % 200 == 0 or iteration == max_iters:
+            iou_class, accuracy_class, F1, mIoU, mAcc, allAcc = test(cfg, feature_extractor, classifier, test_loader)
+            
+            logger.info('Val result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU, mAcc, allAcc))
+            for i in range(cfg.MODEL.NUM_CLASSES):
+                logger.info(
+                    '{} {} iou/accuracy/F1: {:.4f}/{:.4f}/{:.4f}.'.format(i, test_data.trainid2name[i], iou_class[i], accuracy_class[i], F1[i]))
+                
+            if mIoU >= previous_best:
+                filename = os.path.join(cfg.OUTPUT_DIR, "model_best.pth")
+                torch.save({
+                    'feature_extractor': feature_extractor.state_dict(),
+                    'classifier': classifier.state_dict(),
+                    'optimizer_fea': optimizer_fea.state_dict(),
+                    'optimizer_inter': optimizer_inter.state_dict(),
+                    'optimizer_cls': optimizer_cls.state_dict(),
+                    'iteration': iteration,
+                    'previous_best': previous_best,
+                }, filename)
+                previous_best = mIoU
+            logger.info('current best iou:{:.4f}.'.format(previous_best))
 
         # Image Labeling
         if iteration in cfg.ACTIVE.SELECT_ITER or cfg.DEBUG:
@@ -466,6 +498,69 @@ def train(cfg, args):
     )
 
 
+def inference(feature_extractor, classifier, image, label, flip=False):
+    size = label.shape[-2:]
+    if flip:
+        image = torch.cat([image, torch.flip(image, [3])], 0)
+    with torch.no_grad():
+        output = classifier(feature_extractor(image))
+    output = F.interpolate(output, size=size, mode='bilinear', align_corners=True)
+    output = F.softmax(output, dim=1)
+    if flip:
+        output = (output[0] + output[1].flip(2)) / 2
+    else:
+        output = output[0]
+    return output.unsqueeze(dim=0)    
+    
+def test(cfg, feature_extractor, classifier, test_loader):
+    feature_extractor.eval()
+    classifier.eval()
+
+    intersection_meter = AverageMeter()
+    union_meter = AverageMeter()
+    target_meter = AverageMeter()
+    precision_meter = AverageMeter()
+    recall_meter = AverageMeter()
+    pred_class = AverageMeter()
+
+    torch.cuda.empty_cache()
+    dataset_name = cfg.DATASETS.TEST
+
+
+    #F1_list = []
+    for batch in tqdm(test_loader):
+        x, y, name = batch['img'], batch['label'], batch['name']
+        name = name[0]
+        x = x.cuda(non_blocking=True)
+        y = y.cuda(non_blocking=True).long()
+
+        pred = inference(feature_extractor, classifier, x, y, True)
+        
+        output = pred.max(1)[1]
+        intersection, union, target = intersectionAndUnionGPU(output, y, cfg.MODEL.NUM_CLASSES, cfg.INPUT.IGNORE_LABEL)
+        intersection, union, target = intersection.cpu().numpy(), union.cpu().numpy(), target.cpu().numpy()
+        intersection_meter.update(intersection), union_meter.update(union), target_meter.update(target)
+
+        # save the result
+        pred_onehot = F.one_hot(pred.argmax(1), cfg.MODEL.NUM_CLASSES)
+        pred_onehot = pred_onehot.cpu().numpy()
+        pred = pred.cpu().numpy().squeeze().argmax(0)
+        pred_class.update(np.sum(np.sum(pred_onehot,1),1)[0,:])
+
+
+    iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
+    accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
+    
+    precision = intersection_meter.sum / (pred_class.sum + 1e-10)
+    recall = intersection_meter.sum / (target_meter.sum + 1e-10)
+    F1 = 2 * precision * recall/ (precision + recall + 1e-10)
+    mIoU = np.mean(iou_class)
+    mAcc = np.mean(accuracy_class) # 不同类别的Acc的平均
+    allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
+    
+    return iou_class, accuracy_class, F1, mIoU, mAcc, allAcc
+    
+    
 def place_next_points(pred, gt, points, click_indx, iteration, calculate_purity, iteration_thre=100, pred_thresh=0.50,
                       radius=5, num=1, FN_THRESHOLD=0.3, RADIUS_K=3):
     assert click_indx >= 0
@@ -589,7 +684,7 @@ def main():
         default=None,
         nargs=argparse.REMAINDER
     )
-    parser.add_argument('--local_rank', default=0, type=int)
+    parser.add_argument('--local-rank', default=0, type=int)
     parser.add_argument('--port', default=None, type=int)
 
     args = parser.parse_args()
@@ -607,7 +702,7 @@ def main():
     if output_dir:
         mkdir(output_dir)
 
-    logger = setup_logger("EASE-ADA", output_dir, 0)
+    logger = setup_logger("EasySeg", output_dir, 0)
     logger.info(args)
 
     logger.info("Loaded configuration file {}".format(args.config_file))
