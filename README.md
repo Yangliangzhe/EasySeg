@@ -13,15 +13,15 @@ We explore a novel active domain adaptation (ADA) method for semantic segmentati
 
 We show the overview of the proposed EasySeg, 
 
-![image](resources/Overview.png)
+![image](resources/Overview_.png)
 
 illustration of our ISS-Net with resnet101 as backbone, 
 
-<img src="resources/ISS-Net.png" alt="image" style="zoom: 25%;" />
+<img src="resources/ISS-Net_.png" alt="image" style="zoom: 25%;" />
 
 and our consistency regularization.
 
-<img src="resources/ConsistencyRegularization.png" alt="image" style="zoom:36%;" />
+<img src="resources/ConsistencyRegularization_.png" alt="image" style="zoom:36%;" />
 
 For more information on EasySeg, please check our paper.
 
